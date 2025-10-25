@@ -1,122 +1,63 @@
-
 import sys
 
-def main():
-    data = sys.stdin.read().splitlines()
-    if not data:
-        return
-    parts = data[0].strip().split()
-    if len(parts) < 2:
-        return
-    n = int(parts[0]); m = int(parts[1])
-    grid = [list(line.rstrip('\n')) for line in data[1:1+n]]
+data = sys.stdin.read().splitlines()
+n, m = map(int, data[0].split())
+grid = [list(data[i+1]) for i in range(n)]
 
-    N = n*m
-    parent = [-1] * N
-    digit = [-1] * N
+parent = list(range(n*m))
+digit = [0] * (n*m)
 
-    def idx(r,c):
-        return r*m + c
+def find(x):
+    if parent[x] != x:
+        parent[x] = find(parent[x])
+    return parent[x]
 
-    for r in range(n):
-        row = grid[r]
-        for c in range(m):
-            ch = row[c]
-            i = idx(r,c)
-            if ch == '.':
-                parent[i] = -1
-            else:
-                parent[i] = i
-                digit[i] = ord(ch) - ord('0')
+def union(a, b):
+    parent[find(a)] = find(b)
 
-    # union-find
-    def find(x):
-        # iterative with path compression
-        while parent[x] != x:
-            parent[x] = parent[parent[x]]
-            x = parent[x]
-        return x
-
-    def union(a,b):
-        if a == b:
-            return
-        ra = find(a); rb = find(b)
-        if ra == rb:
-            return
-        parent[rb] = ra
-
-    # rows: for each contiguous segment of digits, union symmetric pairs
-    for r in range(n):
-        c = 0
-        while c < m:
-            if grid[r][c] == '.':
-                c += 1
-                continue
-            start = c
-            while c < m and grid[r][c] != '.':
-                c += 1
-            length = c - start
-            for k in range(length // 2):
-                a = idx(r, start + k)
-                b = idx(r, start + length - 1 - k)
-                union(a,b)
-
-    # columns
+for r in range(n):
     for c in range(m):
-        r = 0
-        while r < n:
-            if grid[r][c] == '.':
-                r += 1
-                continue
-            start = r
-            while r < n and grid[r][c] != '.':
-                r += 1
-            length = r - start
-            for k in range(length // 2):
-                a = idx(start + k, c)
-                b = idx(start + length - 1 - k, c)
-                union(a,b)
+        if grid[r][c] != '.':
+            digit[r*m + c] = int(grid[r][c])
 
-    # collect components
-    comps = {}
-    for i in range(N):
-        if parent[i] == -1:
+for r in range(n):
+    c = 0
+    while c < m:
+        if grid[r][c] == '.':
+            c += 1
             continue
-        r = find(i)
-        if r not in comps:
-            comps[r] = []
-        comps[r].append(i)
+        start = c
+        while c < m and grid[r][c] != '.':
+            c += 1
+        for k in range((c-start)//2):
+            union(r*m + start + k, r*m + start + c - start - 1 - k)
 
-    # compute best digit per component
-    final = ['.'] * N
-    for r, cells in comps.items():
-        # gather original digits
-        vals = [digit[i] for i in cells]
-        best_cost = None
-        best_d = 0
-        # try digits 0..9
-        for d in range(10):
-            cost = 0
-            for v in vals:
-                cost += abs(v - d)
-            if best_cost is None or cost < best_cost or (cost == best_cost and d < best_d):
-                best_cost = cost
-                best_d = d
-        ch = chr(ord('0') + best_d)
-        for i in cells:
-            final[i] = ch
+for c in range(m):
+    r = 0
+    while r < n:
+        if grid[r][c] == '.':
+            r += 1
+            continue
+        start = r
+        while r < n and grid[r][c] != '.':
+            r += 1
+        for k in range((r-start)//2):
+            union((start+k)*m + c, (start + r - start - 1 - k)*m + c)
 
-    # output
-    out_lines = []
-    for r in range(n):
-        row_chars = []
-        for c in range(m):
-            i = idx(r,c)
-            if parent[i] == -1:
-                row_chars.append('.')
-            else:
-                row_chars.append(final[i])
-        out_lines.append(''.join(row_chars))
-    sys.stdout.write('\n'.join(out_lines))
+groups = {}
+for i in range(n*m):
+    if grid[i//m][i%m] != '.':
+        root = find(i)
+        if root not in groups:
+            groups[root] = []
+        groups[root].append(i)
 
-main()
+result = ['.'] * (n*m)
+for cells in groups.values():
+    values = [digit[i] for i in cells]
+    best = min(range(10), key=lambda d: (sum(abs(v-d) for v in values), d))
+    for i in cells:
+        result[i] = str(best)
+
+for r in range(n):
+    print(''.join(result[r*m + c] if grid[r][c] != '.' else '.' for c in range(m)))
