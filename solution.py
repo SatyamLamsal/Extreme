@@ -1,11 +1,20 @@
 import sys
 
 data = sys.stdin.read().splitlines()
-n, m = map(int, data[0].split())
+
+n, m = map(int, data[0].strip().split())
+
 grid = [list(data[i+1]) for i in range(n)]
+
+
+# print(grid)
+
+
 
 parent = list(range(n*m))
 digit = [0] * (n*m)
+
+print(f'First parent matrix {parent}')
 
 def find(x):
     if parent[x] != x:
@@ -13,12 +22,18 @@ def find(x):
     return parent[x]
 
 def union(a, b):
+    print(f'A and B : {a} and {b}')
     parent[find(a)] = find(b)
+    print(f'Iterations : {parent}')
 
 for r in range(n):
     for c in range(m):
         if grid[r][c] != '.':
             digit[r*m + c] = int(grid[r][c])
+
+
+
+
 
 for r in range(n):
     c = 0
@@ -30,7 +45,11 @@ for r in range(n):
         while c < m and grid[r][c] != '.':
             c += 1
         for k in range((c-start)//2):
-            union(r*m + start + k, r*m + start + c - start - 1 - k)
+            print(f'Val of K {k}')            
+            union(r*m + start + k, r*m + c-1 - k)   #first iteration ma union(2,3)
+            
+print(parent)
+
 
 for c in range(m):
     r = 0
