@@ -1,6 +1,6 @@
 MOD = 10**9 + 7
-
-M = int(input())
+n = 15
+M = n
 
 dp = [0] * (M + 1)
 if M >= 0:
